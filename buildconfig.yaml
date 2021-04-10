@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: BuildConfig
+metadata:
+  name: service-config-center-artifact-build
+spec:
+  output:
+    to:
+      kind: DockerImage
+      name: registry.felix.com/service-config-center/artifact-image:latest
+    pushSecret:
+      name: docker-registry
+  source:
+    type: Git
+    sourceSecret:
+      name: gitlab
+    git:
+      uri: http://gitlab.felix.com/root/service-config-center.git
+      ref: main
+  strategy:
+    sourceStrategy:
+      from:
+        kind: DockerImage
+        name: registry.felix.com/devops/s2i-builder-image:latest
+      pullSecret:
+        name: docker-registry
+    type: Source
+---
+apiVersion: v1
+kind: BuildConfig
+metadata:
+  name: service-config-center-runtime-build
+spec:
+  output:
+    to:
+      kind: DockerImage
+      name: registry.felix.com/service-config-center/runtime-image:latest
+    pushSecret:
+      name: docker-registry
+  source:
+    type: Dockerfile
+    dockerfile: |- 
+      FROM registry.felix.com/service-config-center/runtime-image:latest 
+      COPY service-config-center-1.0.jar /service-config-center-1.0.jar 
+      ENTRYPOINT ["java","-jar", "-Dspring.profiles.active=${profile}", "/service-config-center-1.0.jar"]
+    images:
+    - from:
+        kind: DockerImage
+        name: registry.felix.com/service-config-center/artifact-image:latest
+      forcePull: true 
+      pullSecret:
+        name: docker-registry
+      paths:
+      - sourcePath: /tmp/src/target/service-config-center-1.0.jar
+        destinationDir: "."
+  strategy:
+    dockerStrategy:
+      from:
+        kind: DockerImage
+        name: registry.felix.com/devops/runtime-image:latest
+      pullSecret:
+        name: docker-registry
+    type: Docker
+  triggers:
+  - imageChange: {}
+    type: ImageChange

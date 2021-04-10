@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: service-config-center-configmaps
+data:
+  profile: dev
+  applicationName: platform-service-config-center
+  serverPort: '8080'
+  defaultZone: ' http://service-registry-center.apps.felix.com/default/'
+  git-url: http://gitlab.felix.com/root/service-config-repo.git}
+  git-search-paths: serviceA, serviceB, serviceC
+  git-username: service
+  git-password: admin123

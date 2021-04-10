@@ -1,0 +1,51 @@
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  annotations:
+    openshift.io/display-name: service-config-center-artifact-image
+  generation: 4
+  name: service-config-center-artifact-image
+spec:
+  lookupPolicy:
+    local: false
+  dockerImageRepository: 'registry.felix.com/service-config-center/artifact-image'
+  tags:
+    - annotations:
+        openshift.io/display-name: openshift service-config-center-artifact-image
+        openshift.io/provider-display-name: 'Felix'
+        tags: 'service-config-center-artifact-image'
+        version: latest
+      from:
+        kind: DockerImage
+        name: 'service-config-center-artifact-image:latest'
+      pullSecret:
+        name: docker-registry
+      generation: 4
+      name: 'latest'
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  annotations:
+    openshift.io/display-name: service-config-center-runtime-image
+  generation: 4
+  name: service-config-center-runtime-image
+spec:
+  lookupPolicy:
+    local: false
+  dockerImageRepository: 'registry.felix.com/service-config-center/runtime-image'
+  tags:
+    - annotations:
+        openshift.io/display-name: openshift service-config-center-runtime-image
+        openshift.io/provider-display-name: 'Felix'
+        tags: 'service-config-center-runtime-image'
+        version: latest
+      from:
+        kind: DockerImage
+        name: 'service-config-center-runtime-image:latest'
+      pullSecret:
+        name: docker-registry
+      generation: 4
+      name: 'latest'   
+      importPolicy:
+        scheduled: true

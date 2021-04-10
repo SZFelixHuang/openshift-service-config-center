@@ -1,0 +1,100 @@
+apiVersion: v1
+kind: BuildConfig
+metadata:
+  name: service-config-center-build-pipeline
+spec:
+  strategy:
+    jenkinsPipelineStrategy:
+      jenkinsfile: |-
+        pipeline {
+            agent any
+            stages {
+                stage('build-artifact-image') {                 
+                    steps {
+                        script {
+                            openshift.withCluster() {
+                                openshift.withProject("spring-cloud") {
+                                    def buildSelector = openshift.selector("bc", "service-config-center-artifact-build");
+                                    buildSelector.startBuild();
+                                    buildSelector.logs('-f');
+                                    def builds = buildSelector.related('builds');
+                                    builds.watch {
+                                     def isRunning = false;
+                                     def currentRunningBuild;
+                                     it.withEach {
+                                        if(it.object().status.phase == "Running"){
+                                            currentRunningBuild = ${it.object()};
+                                            isRunning = true;
+                                        }
+                                     }
+                                     if(isRunning){
+                                        echo "The build ${currentRunningBuild.metadata.name} is ${currentRunningBuild.status.phase}.";
+                                     }
+                                     else{
+                                        echo "All artifact builds were completed."
+                                     }
+                                     return !isRunning;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('build-runtime-image') {
+                    steps {
+                        script {
+                            openshift.withCluster() {
+                                openshift.withProject("spring-cloud") {
+                                    def buildSelector = openshift.selector("bc", "service-config-center-runtime-build");
+                                    buildSelector.startBuild();
+                                    buildSelector.logs('-f');
+                                    def builds = buildSelector.related('builds');
+                                    builds.watch {
+                                     def isRunning = false;
+                                     def currentRunningBuild;
+                                     it.withEach {
+                                        if(it.object().status.phase == "Running"){
+                                            currentRunningBuild = ${it.object()};
+                                            isRunning = true;
+                                        }
+                                     }
+                                     if(isRunning){
+                                        echo "The build ${currentRunningBuild.metadata.name} is ${currentRunningBuild.status.phase}.";
+                                     }
+                                     else{
+                                        echo "All runtime builds were completed."
+                                     }
+                                     return !isRunning;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('update-artifact-image'){
+                    steps {
+                        sh "oc project spring-cloud"
+                        sh " oc import-image service-config-center-artifact-image --all --confirm --scheduled || true"
+                    }
+                }
+                stage('update-runtime-image'){
+                    steps {
+                        sh "oc project spring-cloud"
+                        sh " oc import-image service-config-center-runtime-image --all --confirm --scheduled || true"
+                    }
+                }
+                stage('deployment-runtime-image') {
+                    steps {
+                        script {
+                            openshift.withCluster() {
+                                openshift.withProject("spring-cloud") {
+                                   def deploymentSelector = openshift.selector("dc", "service-config-center");
+                                   deploymentSelector.rollout().latest();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+         }
+    type: JenkinsPipeline
